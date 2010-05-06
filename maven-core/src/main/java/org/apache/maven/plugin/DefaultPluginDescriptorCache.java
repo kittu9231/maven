@@ -71,7 +71,7 @@ public class DefaultPluginDescriptorCache
         return clone( descriptors.get( cacheKey ) );
     }
 
-    private static PluginDescriptor clone( PluginDescriptor original )
+    public static PluginDescriptor clone( PluginDescriptor original )
     {
         PluginDescriptor clone = null;
 

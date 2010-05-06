@@ -23,6 +23,11 @@ import org.apache.maven.artifact.repository.RepositoryRequest;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 /**
  * Caches raw plugin descriptors. A raw plugin descriptor is a descriptor that has just been extracted from the plugin
  * artifact and does not contain any runtime specific data. The cache must not be used for descriptors that hold runtime
@@ -41,6 +46,10 @@ public interface PluginDescriptorCache
     interface Key
     {
         // marker interface for cache keys
+    }
+
+    interface CacheFuture extends Future<PluginDescriptor>
+    {
     }
 
     Key createKey( Plugin plugin, RepositoryRequest repositoryRequest );
