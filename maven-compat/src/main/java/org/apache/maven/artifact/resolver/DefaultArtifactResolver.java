@@ -36,6 +36,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.ArtifactUtils;
 import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.metadata.ArtifactMetadataRetrievalException;
 import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
@@ -687,6 +688,20 @@ public class DefaultArtifactResolver
         resolve( artifact, remoteRepositories, localRepository, null );
     }
 
+
+    Computable<ResolveTask, Artifact> computer = new Computable<ResolveTask, Artifact>()
+    {
+        public Artifact compute( ResolveTask resolveTask )
+            throws InterruptedException
+        {
+            resolveTask.resolveImpl();
+            return resolveTask.artifact;
+           // Artifact artifact = ArtifactUtils.copyArtifact( resolveTask.artifact );
+        }
+    };
+
+    Memoizer<ResolveTask, Artifact> resolvedArtifacts = new Memoizer<ResolveTask, Artifact>( computer);
+
     private class ResolveTask
         implements Runnable
     {
@@ -695,7 +710,7 @@ public class DefaultArtifactResolver
 
         private final CountDownLatch latch;
 
-        private final Artifact artifact;
+        private volatile Artifact artifact;
 
         private final TransferListener transferListener;
 
@@ -716,6 +731,19 @@ public class DefaultArtifactResolver
         }
 
         public void run()
+        {
+            try
+            {
+                Artifact artifact1 = resolvedArtifacts.compute( this );
+                this.artifact = ArtifactUtils.copyArtifact(  artifact1);
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e);
+            }
+        }
+
+        public void resolveImpl()
         {
             try
             {
