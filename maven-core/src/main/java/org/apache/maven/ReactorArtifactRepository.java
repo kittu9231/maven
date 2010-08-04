@@ -84,6 +84,12 @@ public class ReactorArtifactRepository
             {
                 resolve( artifact, file );
             }
+            else
+            {
+                artifact.setFile( null );
+
+                artifact.setRepository( this );
+            }
         }
 
         return artifact;

@@ -286,6 +286,10 @@ public class LifecycleWeaveBuilder
                 }
                 finally
                 {
+                    if ( threadLockedArtifact != null )
+                    {
+                        threadLockedArtifact.releaseArtifact();
+                    }
                     if ( current != null )
                     {
                         executionPlan.forceAllComplete();
@@ -473,6 +477,8 @@ public class LifecycleWeaveBuilder
 
     static class ArtifactLink
     {
+        private volatile boolean resolved;
+        
         private final Artifact artifactInThis;
 
         private final Artifact upstream;
@@ -485,11 +491,14 @@ public class LifecycleWeaveBuilder
 
         public void resolveFromUpstream()
         {
+            if (resolved)
+            {
+                return;
+            }
+            resolved = upstream.getFile() != null;
             artifactInThis.setFile( upstream.getFile() );
             artifactInThis.setRepository( upstream.getRepository() );
             artifactInThis.setResolved( true ); // Or maybe upstream.isResolved()....
-
         }
     }
-
 }

@@ -133,9 +133,13 @@ public class ThreadLockedArtifact
     {
         if ( destination != null && destination.exists() && destination.isFile() )
         {
-            artifactLocked.countDown();
+            releaseArtifact();
         }
         real.setFile( destination );
+    }
+
+    public void releaseArtifact() {
+        artifactLocked.countDown();
     }
 
     public String getBaseVersion()
