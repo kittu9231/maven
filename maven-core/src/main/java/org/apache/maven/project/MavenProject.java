@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.ArtifactUtils;
@@ -42,6 +43,8 @@ import org.apache.maven.artifact.InvalidRepositoryException;
 import org.apache.maven.artifact.factory.ArtifactFactory;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
+import org.apache.maven.lifecycle.CurrentPhaseForThread;
+import org.apache.maven.lifecycle.internal.ThreadLockedArtifact;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.CiManagement;
 import org.apache.maven.model.Contributor;
@@ -319,13 +322,136 @@ public class MavenProject
 
     public Artifact getArtifact()
     {
+        boolean mustLock = mustLock();
+        boolean isForeignThread = isDifferentProjectLockedToThread();
+        System.out.println("Locking status"  + mustLock + isForeignThread + thisProjectThreadLocked);
+        if ( thisProjectThreadLocked && isForeignThread && mustLock)
+        {
+            String currentName = setThreadNameBeforeWait();
+            try
+            {
+                projectLock.await();
+            }
+            catch ( InterruptedException e )
+            {
+                // Ignore and go on to real.getFile();
+            }
+            finally
+            {
+                Thread.currentThread().setName( currentName );
+            }
+        }
         return artifact;
+    }
+
+    private String setThreadNameBeforeWait()
+    {
+        final Thread currentThread = Thread.currentThread();
+        String oldName = currentThread.getName();
+        currentThread.setName( threadProject.get() + " waiting on artifact " + getLockKeyForThisProject() );
+        return oldName;
     }
 
     public void setArtifact( Artifact artifact )
     {
+        File destination = artifact.getFile();
+        if ( destination != null && destination.isFile() )
+        {
+            projectLock.countDown();
+        }
         this.artifact = artifact;
     }
+
+    /**
+     * Start definitely very private weave-mode stuff
+     */
+    private static final InheritableThreadLocal<String> threadProject = new InheritableThreadLocal<String>();
+
+    private volatile boolean thisProjectThreadLocked = false;
+
+    private final CountDownLatch projectLock = new CountDownLatch( 1 );
+
+
+    public CountDownLatch getProjectLock()
+    {
+        return projectLock;
+    }
+
+    public void replaceProjectArtifactsWithProxies(Set<Artifact> projectArtifacts){
+        Set<Artifact> modified  = new LinkedHashSet<Artifact>();
+        for (Artifact artifact1 : getArtifacts()) {
+              if (projectArtifacts.contains(artifact1)){
+                  modified.add( new ThreadLockedArtifact(artifact1, getProjectLock()));
+              }  else {
+                  modified.add( artifact1);
+              }
+        }
+        this.artifacts = modified;
+    }
+
+    /**
+     * Locks the artifact of this project to the current thread.
+     * <p/>
+     * Please note: This method is public only for technical reasons and is not part of any api.
+     */
+    public void lockToThread()
+    {
+        threadProject.set( getLockKeyForThisProject() );
+    }
+    /**
+     * Please note: This method is public only for technical reasons and is not part of any api.
+     */
+
+    public void lock()
+    {
+        thisProjectThreadLocked = true;
+    }
+
+    /**
+     * Unlocks the artifact of this project from the current thread.
+     * <p/>
+     * Please note: This method is public only for technical reasons and is not part of any api.
+     */
+    public void unlockFromThread()
+    {
+        threadProject.remove();
+        projectLock.countDown();
+        thisProjectThreadLocked = false;
+    }
+
+    /**
+     * Let downstream projects access the file of this project even if it's locked if it's in compile or test
+     * @return True if downstream must lock
+     */
+    private boolean mustLock()
+    {
+        boolean dontNeedLock = CurrentPhaseForThread.isPhase( "compile" ) || CurrentPhaseForThread.isPhase( "test" );
+        return !dontNeedLock;
+    }
+
+    private String getLockKeyForThisProject()
+    {
+        return ArtifactUtils.key( model.getGroupId(), model.getArtifactId(), model.getVersion() );
+    }
+
+    private boolean isDifferentProjectLockedToThread()
+    {
+        final String projectForThisThread = threadProject.get();
+        if (projectForThisThread == null)
+        {
+            System.out.println(getLockKeyForThisProject() + " not locked to thread");
+            return false;
+        }
+        return !isThisProjectBuiltByThisThread(projectForThisThread);
+    }
+
+    private boolean isThisProjectBuiltByThisThread(String projectForThisThread) {
+        return projectForThisThread.equals( getLockKeyForThisProject() );
+    }
+
+    /**
+     * End definitely very private weave-mode stuff
+     */
 
     //@todo I would like to get rid of this. jvz.
     public Model getModel()

@@ -30,9 +30,9 @@ import java.util.concurrent.CountDownLatch;
  * Wraps individual MojoExecutions, containing information about completion status and scheduling.
  * <p/>
  * NOTE: This class is not part of any public api and can be changed or deleted without prior notice.
- * 
- * @since 3.0-beta-1
+ *
  * @author Kristian Rosenvold
+ * @since 3.0-beta-1
  */
 public class ExecutionPlanItem
 {
@@ -77,7 +77,23 @@ public class ExecutionPlanItem
     public void waitUntilDone()
         throws InterruptedException
     {
-        done.await();
+        String currentName = giveNiceNameToThreadWhileWeBlock();
+        try
+        {
+            done.await();
+        }
+        finally
+        {
+            Thread.currentThread().setName( currentName );
+        }
+    }
+
+    private String giveNiceNameToThreadWhileWeBlock()
+    {
+        Thread currentThread = Thread.currentThread();
+        String currentName = currentThread.getName();
+        currentThread.setName( "Waiting for " + mojoExecution.getGroupId() + "/" + mojoExecution.getArtifactId() );
+        return currentName;
     }
 
     public Schedule getSchedule()

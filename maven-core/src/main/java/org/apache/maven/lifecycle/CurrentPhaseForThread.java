@@ -1,4 +1,4 @@
-package org.apache.maven.lifecycle.internal;
+package org.apache.maven.lifecycle;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -23,11 +23,13 @@ package org.apache.maven.lifecycle.internal;
  * Knows the phase the current thread is executing.
  * <p/>
  * This class is used in weave-mode only , there may be better ways of doing this once the dust settles.
- * 
- * @since 3.0-beta-2
+ * <p/>
+ * NOTE: This class is not part of any public api and can be changed or deleted without prior notice.
+ *
  * @author Kristian Rosenvold
+ * @since 3.0-beta-2
  */
-class CurrentPhaseForThread
+public class CurrentPhaseForThread
 {
     private static final InheritableThreadLocal<String> threadPhase = new InheritableThreadLocal<String>();
 

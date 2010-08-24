@@ -27,6 +27,7 @@ import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.OverConstrainedVersionException;
 import org.apache.maven.artifact.versioning.VersionRange;
+import org.apache.maven.lifecycle.CurrentPhaseForThread;
 
 import java.io.File;
 import java.util.Collection;
@@ -38,16 +39,17 @@ import java.util.concurrent.CountDownLatch;
  * 
  * @since 3.0-beta-2
  */
-class ThreadLockedArtifact
+public class ThreadLockedArtifact
     implements Artifact
 {
     private final Artifact real;
 
-    private final CountDownLatch artifactLocked = new CountDownLatch( 1 );
+    private final CountDownLatch artifactLocked;
 
-    ThreadLockedArtifact( Artifact real )
+    public ThreadLockedArtifact( Artifact real, CountDownLatch projectLatch )
     {
         this.real = real;
+        this.artifactLocked = projectLatch;
     }
 
     public boolean hasReal()

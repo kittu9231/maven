@@ -25,6 +25,7 @@ import org.apache.maven.execution.BuildSuccess;
 import org.apache.maven.execution.ExecutionEvent;
 import org.apache.maven.execution.MavenExecutionRequest;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.lifecycle.CurrentPhaseForThread;
 import org.apache.maven.lifecycle.LifecycleExecutionException;
 import org.apache.maven.lifecycle.MavenExecutionPlan;
 import org.apache.maven.lifecycle.Schedule;
@@ -115,7 +116,7 @@ public class LifecycleWeaveBuilder
                 Artifact mainArtifact = mavenProject.getArtifact();
                 if ( mainArtifact != null && !( mainArtifact instanceof ThreadLockedArtifact ) )
                 {
-                    ThreadLockedArtifact threadLockedArtifact = new ThreadLockedArtifact( mainArtifact );
+                    ThreadLockedArtifact threadLockedArtifact = new ThreadLockedArtifact( mainArtifact, mavenProject.getProjectLock() );
                     mavenProject.setArtifact( threadLockedArtifact );
                 }
             }
@@ -136,6 +137,7 @@ public class LifecycleWeaveBuilder
                         projectArtifacts.add( artifact );
                     }
                 }
+
                 for ( ProjectSegment projectBuild : segmentChunks )
                 {
                     plans.put( projectBuild, executor.submit( createEPFuture( projectBuild, projectArtifacts ) ) );
@@ -146,25 +148,30 @@ public class LifecycleWeaveBuilder
                     executionPlans.put( projectSegment.getProject(), plans.get( projectSegment ).get() );
 
                 }
+                List<Callable<ProjectSegment>> callables = new ArrayList<Callable<ProjectSegment>>();
                 for ( ProjectSegment projectBuild : segmentChunks )
                 {
-                    try
-                    {
                         final MavenExecutionPlan executionPlan = plans.get( projectBuild ).get();
                         DependencyContext dependencyContext =
                             new DependencyContext( executionPlan, projectBuild.getTaskSegment().isAggregating() );
 
+                        Collection<ArtifactLink> dependencyLinks = getUpstreamReactorDependencies( projectBuild );
+
                         final Callable<ProjectSegment> projectBuilder =
                             createCallableForBuildingOneFullModule( buildContext, session, reactorBuildStatus,
                                                                     executionPlan, projectBuild, dependencyContext,
-                                                                    concurrentBuildLogger );
+                                                                    concurrentBuildLogger, dependencyLinks );
 
-                        futures.add( service.submit( projectBuilder ) );
-                    }
-                    catch ( Exception e )
-                    {
-                        throw new ExecutionException( e );
-                    }
+                        callables.add( projectBuilder);
+                }
+                for ( ProjectSegment projectBuild : segmentChunks )
+                {
+                    projectBuild.getProject().replaceProjectArtifactsWithProxies(projectArtifacts);
+                    projectBuild.getProject().lock();
+                }
+                for (Callable<ProjectSegment> callable : callables)
+                {
+                    futures.add( service.submit( callable ) );
                 }
 
                 for ( Future<ProjectSegment> buildFuture : futures )
@@ -203,20 +210,17 @@ public class LifecycleWeaveBuilder
                                                                              final MavenExecutionPlan executionPlan,
                                                                              final ProjectSegment projectBuild,
                                                                              final DependencyContext dependencyContext,
-                                                                             final ConcurrentBuildLogger concurrentBuildLogger )
+                                                                             final ConcurrentBuildLogger concurrentBuildLogger,
+                                                                             final Collection<ArtifactLink> dependencyLinks )
     {
         return new Callable<ProjectSegment>()
         {
             public ProjectSegment call()
                 throws Exception
             {
+                projectBuild.getProject().lockToThread();
                 Iterator<ExecutionPlanItem> planItems = executionPlan.iterator();
                 ExecutionPlanItem current = planItems.hasNext() ? planItems.next() : null;
-                ThreadLockedArtifact threadLockedArtifact = (ThreadLockedArtifact)projectBuild.getProject().getArtifact();
-                if ( threadLockedArtifact != null )
-                {
-                    threadLockedArtifact.attachToThread();
-                }
                 long buildStartTime = System.currentTimeMillis();
 
                 //muxer.associateThreadWithProjectSegment( projectBuild );
@@ -229,7 +233,7 @@ public class LifecycleWeaveBuilder
 
                 eventCatapult.fire( ExecutionEvent.Type.ProjectStarted, projectBuild.getSession(), null );
 
-                Collection<ArtifactLink> dependencyLinks = getUpstreamReactorDependencies( projectBuild );
+      //          Collection<ArtifactLink> dependencyLinks = getUpstreamReactorDependencies( projectBuild );
 
                 try
                 {
@@ -286,6 +290,7 @@ public class LifecycleWeaveBuilder
                     {
                         executionPlan.forceAllComplete();
                     }
+                    projectBuild.getProject().unlockFromThread();
                     // muxer.setThisModuleComplete( projectBuild );
                 }
                 return null;
