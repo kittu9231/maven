@@ -49,6 +49,7 @@ public class StringSearchModelInterpolatorTest
     {
         super.setUp();
         interpolator = lookup( ModelInterpolator.class );
+        StringSearchModelInterpolator.clearCaches();
     }
 
 

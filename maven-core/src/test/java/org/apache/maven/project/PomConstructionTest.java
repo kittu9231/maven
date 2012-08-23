@@ -30,6 +30,7 @@ import org.apache.maven.artifact.repository.layout.DefaultRepositoryLayout;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.building.ModelBuildingRequest;
+import org.apache.maven.model.interpolation.StringSearchModelInterpolator;
 import org.apache.maven.project.harness.PomTestWrapper;
 import org.apache.maven.repository.RepositorySystem;
 import org.apache.maven.repository.internal.MavenRepositorySystemSession;
@@ -58,6 +59,7 @@ public class PomConstructionTest
         new File( getBasedir(), BASE_MIXIN_DIR );
         projectBuilder = (DefaultProjectBuilder) lookup( ProjectBuilder.class );
         repositorySystem = lookup( RepositorySystem.class );
+        StringSearchModelInterpolator.clearCaches();
     }
     
     @Override
