@@ -2,7 +2,6 @@ package org.apache.maven.model.interpolation;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -100,7 +99,7 @@ public class InterpolationTreeBuilder
             for ( InterpolationCache.CacheField currentField : cacheEntry.fields )
             {
                 Class<?> type = currentField.getClass();
-                if ( type.isArray() )
+                if ( false && type.isArray() )
                 {
                     currentField.field.setAccessible( true );
                     Object value = currentField.field.get( object );
@@ -137,7 +136,7 @@ public class InterpolationTreeBuilder
                     }
                     else if ( currentField.isList )
                     {
-                        buildFullListItem( object, children, value, currentField.field );
+                        buildFullListItem( children, value, currentField.field );
                     }
                     else if ( currentField.isMap )
                     {
@@ -164,7 +163,7 @@ public class InterpolationTreeBuilder
         return children.size() > 0 ? children : null;
     }
 
-    private void buildFullListItem( Object object, List<Element> children, Object value, Field currentField )
+    private void buildFullListItem( List<Element> children, Object value, Field currentField )
         throws IllegalAccessException
     {
         @SuppressWarnings( "unchecked" ) List<Object> c = (List<Object>) value;
