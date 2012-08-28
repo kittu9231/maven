@@ -137,7 +137,7 @@ public class InterpolationTreeBuilder
                     }
                     else if ( currentField.isList )
                     {
-                        buildFullListItem( object, children, currentField.field );
+                        buildFullListItem( object, children, value, currentField.field );
                     }
                     else if ( currentField.isMap )
                     {
@@ -164,22 +164,10 @@ public class InterpolationTreeBuilder
         return children.size() > 0 ? children : null;
     }
 
-    private Field[] collectAllFIelds( Object object )
-    {
-        Class<?> aClass = object.getClass();
-        List<Field> fields = new ArrayList<Field>();
-        while ( aClass != null && isQualifiedForInterpolation( aClass ) )
-        {
-            fields.addAll( Arrays.asList( aClass.getDeclaredFields() ) );
-            aClass = aClass.getSuperclass();
-        }
-        return fields.toArray( new Field[fields.size()] );
-    }
-
-    private void buildFullListItem( Object object, List<Element> children, Field currentField )
+    private void buildFullListItem( Object object, List<Element> children, Object value, Field currentField )
         throws IllegalAccessException
     {
-        @SuppressWarnings( "unchecked" ) List<Object> c = (List<Object>) currentField.get( object );
+        @SuppressWarnings( "unchecked" ) List<Object> c = (List<Object>) value;
         if ( c != null )
         {
             int size = c.size();
@@ -212,13 +200,10 @@ public class InterpolationTreeBuilder
 
     private void buildStringEntry( List<Element> children, Field currentField, String value )
     {
-        if ( !Modifier.isFinal( currentField.getModifiers() ) )
-        {
             if ( isInterpolationPossible( value ) )
             {
                 children.add( new StringMemberInterpolatable( currentField, value ) );
             }
-        }
     }
 
     private void buildObjectEntry( List<Element> children, Field currentField, Object value )
@@ -305,7 +290,7 @@ public class InterpolationTreeBuilder
 
         public List<String> getStrings()
         {
-            return getPrefixedStrings( field.getName() + "[" + key + "]", children );
+            return getPrefixedStrings( field.getName() + "[" + key + "]", Arrays.asList( children ));
         }
     }
 
@@ -500,16 +485,20 @@ public class InterpolationTreeBuilder
         }
     }
 
+    static Element[] toArray(List<Element> items){
+        return items.toArray( new Element[items.size()]);
+    }
+
     static class DirectArrayContainer
         implements Element
     {
         private final int pos;
 
-        private final List<Element> children;
+        private final Element[] children;
 
         DirectArrayContainer( List<Element> children, int pos )
         {
-            this.children = children;
+            this.children = toArray( children );
             this.pos = pos;
         }
 
@@ -556,7 +545,7 @@ public class InterpolationTreeBuilder
 
         public List<String> getStrings()
         {
-            return getPrefixedStrings( field.getName() + "[" + pos + "]", children );
+            return getPrefixedStrings( field.getName() + "[" + pos + "]", Arrays.asList( children ) );
         }
 
         @Override
@@ -593,7 +582,7 @@ public class InterpolationTreeBuilder
 
         public List<String> getStrings()
         {
-            return getPrefixedStrings( field.getName() + "[" + pos + "]", children );
+            return getPrefixedStrings( field.getName() + "[" + pos + "]", Arrays.asList( children ) );
         }
 
 
@@ -629,7 +618,7 @@ public class InterpolationTreeBuilder
 
         public List<String> getStrings()
         {
-            return getPrefixedStrings( field.getName() + ".", children );
+            return getPrefixedStrings( field.getName() + ".", Arrays.asList( children ));
         }
 
         @Override
@@ -678,12 +667,12 @@ public class InterpolationTreeBuilder
     static abstract class MyContainerImpl
         extends MyField
     {
-        protected final List<Element> children;
+        protected final Element[] children;
 
         MyContainerImpl( Field field, List<Element> children )
         {
             super( field );
-            this.children = children;
+            this.children = toArray( children );
         }
 
         protected abstract Object getTarget( Object target )
