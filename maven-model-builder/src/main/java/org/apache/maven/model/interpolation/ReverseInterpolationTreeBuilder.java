@@ -7,21 +7,21 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import javax.crypto.NullCipher;
+
 /**
  * Builds an interpolation tree, describing every single possible interpolation for
  * a given pom instance. Does not actually *do* any interpolations
  */
-public class InterpolationTreeBuilder
+public class ReverseInterpolationTreeBuilder
 {
-    public Elements buildTree( Object root )
+    List<NuElement> leaves = new ArrayList<NuElement>(  );
+    public NuElement buildTree( Object root )
         throws IllegalAccessException
     {
-        List<Element> container = buildChildren( root );
-        if ( container == null )  // Nothing to do.
-        {
-            container = new ArrayList<Element>(  );
-        }
-        return new Elements( container.toArray( new Element[container.size()] ) );
+        NuElement rootElem = new NuElement();
+        buildChildren( rootElem, root );
+        return rootElem;
     }
 
     class Elements
@@ -55,44 +55,37 @@ public class InterpolationTreeBuilder
 
     }
 
-    private List<Element> buildChildren( Object object )
+    private void buildChildren( NuElement parentElement, Object object )
         throws IllegalAccessException
     {
         if ( object == null )
         {
-            return null;
+            return;
         }
-        List<Element> children = new ArrayList<Element>();
 
         InterpolationCache.CacheItem cacheEntry = InterpolationCache.getCacheEntry( object.getClass() );
         if ( cacheEntry.isArray )
         {
-            List<Element> kiz = new ArrayList<Element>();
             int len = Array.getLength( object );
             for ( int j = 0; j < len; j++ )
             {
 
+                NuElement kiz = new DirectArrayContainer( parentElement, j ) ;
                 Object item = Array.get( object, j );
-                children.add( new DirectArrayContainer( kiz, j ) );
 
                 if ( item instanceof String )
                 {
                     if ( isInterpolationPossible( (String) item ) )
                     {
-                        Element indexedItem = new DirectArrayEntryInterpolatable( j, (String) item );
-                        kiz.add( indexedItem );
+                        NuElement indexedItem = new DirectArrayEntryInterpolatable(  j, (String) item, kiz );
+                        leaves.add(  indexedItem );
                     }
                 }
                 else
                 {
-                    List<Element> build = buildChildren( item );
-                    if ( build != null )
-                    {
-                        kiz.add( new DirectArrayContainer( build, j ) );
-                    }
+                    buildChildren( kiz, item );
                 }
             }
-            return kiz.size() > 0 ? kiz : null;
         }
         else
         {
@@ -103,11 +96,11 @@ public class InterpolationTreeBuilder
 
                 if ( currentField.isString )
                 {
-                    buildStringEntry( children, currentField.field, (String) value );
+                    buildStringEntry( parentElement, currentField.field, (String) value );
                 }
                 else if ( currentField.isList )
                 {
-                    buildFullListItem( children, value, currentField.field );
+                    buildFullListItem( parentElement, value, currentField.field );
                 }
                 else if ( currentField.isMap )
                 {
@@ -120,20 +113,19 @@ public class InterpolationTreeBuilder
                     {
                         for ( Object entry : aMap.entrySet() )
                         {
-                            buildMapItem( children, currentField.field, (Map.Entry) entry );
+                            buildMapItem( parentElement, currentField.field, (Map.Entry) entry );
                         }
                     }
                 }
                 else
                 {
-                    buildObjectEntry( children, currentField.field, value );
+                    buildObjectEntry( parentElement, currentField.field, value );
                 }
             }
         }
-        return children.size() > 0 ? children : null;
     }
 
-    private void buildFullListItem( List<Element> children, Object value, Field currentField )
+    private void buildFullListItem( NuElement parent, Object value, Field currentField )
         throws IllegalAccessException
     {
         @SuppressWarnings( "unchecked" ) List<Object> c = (List<Object>) value;
@@ -150,42 +142,35 @@ public class InterpolationTreeBuilder
                     {
                         if ( isInterpolationPossible( itemValue ) )
                         {
-                            children.add( new ListItemInterpolatable( currentField, i, (String) itemValue ) );
+                            leaves.add( new ListItemInterpolatable( parent, currentField, i, (String) itemValue ) );
                         }
                     }
                     else
                     {
 
-                        List<Element> elements = buildChildren( itemValue );
-                        if ( elements != null )
-                        {
-                            children.add( new ListContainer( currentField, elements, i ) );
-                        }
+                        buildChildren( new ListContainer( currentField, parent, i ), itemValue );
                     }
                 }
             }
         }
     }
 
-    private void buildStringEntry( List<Element> children, Field currentField, String value )
+    private void buildStringEntry( NuElement parentElement, Field currentField, String value )
     {
             if ( isInterpolationPossible( value ) )
             {
-                children.add( new StringMemberInterpolatable( currentField, value ) );
+                leaves.add( new StringMemberInterpolatable( parentElement, currentField, value ) );
             }
     }
 
-    private void buildObjectEntry( List<Element> children, Field currentField, Object value )
+    private void buildObjectEntry( NuElement parent, Field currentField, Object value )
         throws IllegalAccessException
     {
-        List<Element> build = buildChildren( value );
-        if ( build != null )
-        {
-            children.add( new ObjectContainer( currentField, build ) );
-        }
+        buildChildren( new ObjectContainer( currentField, parent), value );
     }
 
-    private void buildMapItem( List<Element> children, Field currentField, Map.Entry item )
+
+    private void buildMapItem( NuElement parent, Field currentField, Map.Entry item )
         throws IllegalAccessException
     {
         Object value1 = item.getValue();
@@ -193,16 +178,12 @@ public class InterpolationTreeBuilder
         {
             if ( isInterpolationPossible( value1 ) )
             {
-                children.add( new MapEntryInterpolatable( currentField, item.getKey(), (String) value1 ) );
+                leaves.add( new MapEntryInterpolatable( parent, currentField, item.getKey(), (String) value1 ) );
             }
         }
         else
         {
-            List<Element> build = buildChildren( value1 );
-            if ( build != null )
-            {
-                children.add( new MapItem( currentField, build, item.getKey() ) );
-            }
+            buildChildren( new MapItem(currentField, parent, item.getKey()),  value1 );
         }
     }
 
@@ -218,22 +199,25 @@ public class InterpolationTreeBuilder
 
 
     static class MapItem
-        extends MyContainerImpl
+        extends NuElement
     {
+        private final Field currentField;
+
+        private final NuElement parent;
+
         private final Object key;
 
-        MapItem( Field currentField, List<Element> target, Object key )
+        MapItem( Field currentField, NuElement parent , Object key )
         {
-            super( currentField, target );
+            this.currentField = currentField;
+            this.parent = parent;
             this.key = key;
         }
 
-        @Override
-        protected Object getTarget( Object target )
+        public Object getValue( Object target )
             throws IllegalAccessException
         {
-            Map map = (Map) field.get( target );
-            return map.get( key );
+            return currentField.get( parent.getValue( target ));
         }
 
     }
@@ -245,6 +229,16 @@ public class InterpolationTreeBuilder
         void interpolate( Object target, Interpolator interpolator )
             throws IllegalAccessException;
     }
+
+    static class NuElement {
+
+        public Object getValue(Object root)
+            throws IllegalAccessException
+        {
+            return root;
+        }
+    }
+
 
     interface Interpolator
     {
@@ -260,74 +254,42 @@ public class InterpolationTreeBuilder
     }
 
     static class MapEntryInterpolatable
-        extends MyField
-        implements MyInterpolable
+        extends NuElement
     {
+        private final NuElement parent;
+
+        private final Field currentField;
+
         private final Object key;
 
         private final String originalValue;
 
-        MapEntryInterpolatable( Field currentField, Object key, String originalValue )
+        MapEntryInterpolatable( NuElement parent, Field currentField, Object key, String originalValue )
         {
-            super( currentField );
+            this.parent = parent;
+            this.currentField = currentField;
             this.key = key;
             this.originalValue = originalValue;
         }
 
-        public void interpolate( Object target, Interpolator interpolator )
-            throws IllegalAccessException
-        {
-
-            String s = interpolator.interpolate( originalValue );
-            @SuppressWarnings( "unchecked" ) Map<Object, String> map = (Map) field.get( target );
-            try
-            {
-                map.put( key, s );
-            }
-            catch ( UnsupportedOperationException ignore )
-            {
-
-            }
-
-        }
-
         @Override
-        public String toString()
-        {
-            return field.getName() + "[" + key + "]";
-        }
-    }
-
-    static class DirectArrayEntryInterpolatable
-        implements MyInterpolable
-    {
-        private final int pos;
-
-        private final String originalValue;
-
-        public void interpolate( Object target, Interpolator interpolator )
+        public Object getValue( Object root )
             throws IllegalAccessException
         {
-            String s = interpolator.interpolate( originalValue );
-            Array.set( target, pos, s );
-        }
-
-        DirectArrayEntryInterpolatable( int pos, String originalValue )
-        {
-            this.pos = pos;
-            this.originalValue = originalValue;
+            @SuppressWarnings( "unchecked" ) Map<Object, String> map = (Map) currentField.get( parent.getValue( root ));
+//            String s = interpolator.interpolate( originalValue );
+            return map.get(  key );
         }
 
 
         @Override
         public String toString()
         {
-            return "[" + pos + "]";
+            return parent.toString()+ currentField.getName() + "[" + key + "]";
         }
     }
 
-
-    static class ListItemInterpolatable
+    static class ArrayEntryInterpolatable
         extends MyField
         implements MyInterpolable
     {
@@ -335,7 +297,7 @@ public class InterpolationTreeBuilder
 
         private final String originalValue;
 
-        ListItemInterpolatable( Field currentField, int pos, String originalValue )
+        ArrayEntryInterpolatable( Field currentField, int pos, String originalValue )
         {
             super( currentField );
             this.pos = pos;
@@ -347,15 +309,8 @@ public class InterpolationTreeBuilder
         {
 
             String s = interpolator.interpolate( originalValue );
-            @SuppressWarnings( "unchecked" ) List<Object> list = (List) field.get( target );
-            try
-            {
-                list.set( pos, s );
-            }
-            catch ( UnsupportedOperationException ignore )
-            {
-
-            }
+            Object array = field.get( target );
+            Array.set( array, pos, s );
         }
 
 
@@ -366,24 +321,104 @@ public class InterpolationTreeBuilder
         }
     }
 
-    static class StringMemberInterpolatable
-        extends MyField
-        implements MyInterpolable
+    static class DirectArrayEntryInterpolatable
+        extends NuElement
     {
+        private final int pos;
+
         private final String originalValue;
 
-        StringMemberInterpolatable( Field currentField, String originalValue )
-        {
-            super( currentField );
-            this.originalValue = originalValue;
-        }
+        private final NuElement parent;
+
 
         public void interpolate( Object target, Interpolator interpolator )
             throws IllegalAccessException
         {
             String s = interpolator.interpolate( originalValue );
-            field.set( target, s );
+
+            Array.set( target, pos, s );
         }
+
+        @Override
+        public Object getValue( Object root )
+            throws IllegalAccessException
+        {
+            return Array.get( parent.getValue( root ), pos );
+        }
+
+        DirectArrayEntryInterpolatable( int pos, String originalValue, NuElement parent )
+        {
+            this.pos = pos;
+            this.originalValue = originalValue;
+            this.parent = parent;
+        }
+
+
+        @Override
+        public String toString()
+        {
+            return parent.toString() + "[" + pos + "]";
+        }
+    }
+
+
+    static class ListItemInterpolatable
+        extends NuElement
+    {
+        private final NuElement parent;
+
+        private final Field currentField;
+
+        private final int pos;
+
+        private final String originalValue;
+
+        ListItemInterpolatable( NuElement parent, Field currentField, int pos, String originalValue )
+        {
+            this.parent = parent;
+            this.currentField = currentField;
+            this.pos = pos;
+            this.originalValue = originalValue;
+        }
+
+        @Override
+        public Object getValue( Object root )
+            throws IllegalAccessException
+        {
+            return currentField.get( parent.getValue(  root ));
+        }
+
+
+        @Override
+        public String toString()
+        {
+            return parent.toString() + "." + currentField.getName() + "[" + pos + "]";
+        }
+    }
+
+    static class StringMemberInterpolatable
+        extends NuElement
+    {
+        private final Field currentField;
+
+        private final String originalValue;
+        private final NuElement parent;
+
+        StringMemberInterpolatable( NuElement parent, Field currentField, String originalValue )
+        {
+            this.parent = parent;
+            this.currentField = currentField;
+            this.originalValue = originalValue;
+        }
+
+
+        @Override
+        public Object getValue( Object root )
+            throws IllegalAccessException
+        {
+            return currentField.get(  super.getValue(  root ) );
+        }
+
     }
 
     static Element[] toArray(List<Element> items){
@@ -391,33 +426,51 @@ public class InterpolationTreeBuilder
     }
 
     static class DirectArrayContainer
-        implements Element
+        extends NuElement
     {
         private final int pos;
 
-        private final Element[] children;
+        private final NuElement parent;
 
-        DirectArrayContainer( List<Element> children, int pos )
+        DirectArrayContainer( NuElement parent, int pos )
         {
-            this.children = toArray( children );
+            this.parent = parent;
             this.pos = pos;
         }
 
-        public void interpolate( Object target, Interpolator interpolator )
+
+        @Override
+        public Object getValue( Object root )
             throws IllegalAccessException
         {
-            Object contained = getTarget( target );
-            for ( Element child : children )
-            {
-                child.interpolate( contained, interpolator );
-            }
+            return Array.get( super.getValue( root ), pos);
         }
 
 
+        @Override
+        public String toString()
+        {
+            return parent.toString()+ "[" +pos + "].";
+        }
+    }
+
+    static class ArrayContainer
+        extends MyContainerImpl
+    {
+        private final int pos;
+
+        ArrayContainer( Field currentField, List<Element> children, int pos )
+        {
+            super( currentField, children );
+            this.pos = pos;
+        }
+
+        @Override
         protected Object getTarget( Object target )
             throws IllegalAccessException
         {
-            return Array.get( target, pos );
+            Object array = field.get( target );
+            return Array.get( array, pos );
         }
 
         @Override
@@ -427,75 +480,69 @@ public class InterpolationTreeBuilder
 
             for ( Element child : children )
             {
-                result.append( "[" ).append( pos ).append( "]." ).append( child.toString() );
+                result.append( field.getName() + "[" + pos + "]." + child.toString() );
             }
             return result.toString();
         }
     }
 
     static class ListContainer
-        extends MyContainerImpl
+        extends NuElement
     {
+        private final Field currentField;
+
+        private final NuElement parent;
+
         private final int pos;
 
-        ListContainer( Field currentField, List<Element> children, int pos )
+        ListContainer( Field currentField, NuElement parent, int pos )
         {
-            super( currentField, children );
+            this.currentField = currentField;
+            this.parent = parent;
             this.pos = pos;
         }
 
 
         @Override
-        protected Object getTarget( Object target )
+        public Object getValue( Object target )
             throws IllegalAccessException
         {
-            List list = (List) field.get( target );
-            return list.get( pos );
+
+            return currentField.get(  parent.getValue(  target ) );
         }
 
         @Override
         public String toString()
         {
-            StringBuilder result = new StringBuilder();
-
-            for ( Element child : children )
-            {
-                result.append( field.getName() ).append( "[" ).append( pos ).append( "]." ).append( child.toString() );
-            }
-            return result.toString();
+            return parent.toString() + currentField.getName() + "[" + pos + "]";
         }
     }
 
     static class ObjectContainer
-        extends MyContainerImpl
+        extends NuElement
     {
-        ObjectContainer( Field currentField, List<Element> build )
+        private final Field currentField;
+
+        private final NuElement parent;
+
+        ObjectContainer( Field currentField, NuElement parent)
         {
-            super( currentField, build );
+            this.currentField = currentField;
+            this.parent = parent;
         }
 
-
-        public List<String> getStrings()
-        {
-            return getPrefixedStrings( field.getName() + ".", Arrays.asList( children ));
-        }
 
         @Override
-        protected Object getTarget( Object target )
+        public Object getValue( Object root )
             throws IllegalAccessException
         {
-            return field.get( target );
+            return currentField.get( parent.getValue(  root ));
         }
 
         @Override
         public String toString()
         {
-            StringBuilder result = new StringBuilder();
-            for ( String s : getStrings() )
-            {
-                result.append( s );
-            }
-            return result.toString();
+            return parent.toString() + "." + currentField.getName();
         }
     }
 
