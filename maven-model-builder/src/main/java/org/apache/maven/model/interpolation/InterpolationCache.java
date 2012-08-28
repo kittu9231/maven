@@ -21,6 +21,7 @@ package org.apache.maven.model.interpolation;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -148,6 +149,8 @@ public class InterpolationCache
     {
         public final Field field;
 
+        public final Type type;
+
         public final boolean isString;
 
         public final boolean isList;
@@ -161,6 +164,7 @@ public class InterpolationCache
         CacheField( Field field, boolean string, boolean list, boolean isCollection, boolean map, boolean object )
         {
             this.field = field;
+            this.type = field.getType();
             isString = string;
             isList = list;
             isColletin = isCollection;

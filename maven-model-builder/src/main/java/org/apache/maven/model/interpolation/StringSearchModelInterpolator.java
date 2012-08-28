@@ -159,7 +159,6 @@ public class StringSearchModelInterpolator
                         }
 
                     } else {
-                        System.out.println( "Cache hit !!= ");
                     }
                 }
                 else

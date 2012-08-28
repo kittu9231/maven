@@ -65,7 +65,8 @@ public class InterpolationTreeBuilder
         }
         List<Element> children = new ArrayList<Element>();
 
-        if ( object.getClass().isArray() )
+        InterpolationCache.CacheItem cacheEntry = InterpolationCache.getCacheEntry( object.getClass() );
+        if ( cacheEntry.isArray )
         {
             List<Element> kiz = new ArrayList<Element>();
             int len = Array.getLength( object );
@@ -96,13 +97,13 @@ public class InterpolationTreeBuilder
         }
         else
         {
-            for ( Field currentField : collectAllFIelds( object ) )
+            for ( InterpolationCache.CacheField currentField : cacheEntry.fields )
             {
-                Class<?> type = currentField.getType();
+                Class<?> type = currentField.getClass();
                 if ( type.isArray() )
                 {
-                    currentField.setAccessible( true );
-                    Object value = currentField.get( object );
+                    currentField.field.setAccessible( true );
+                    Object value = currentField.field.get( object );
                     int len = Array.getLength( value );
                     for ( int i = 0; i < len; i++ )
                     {
@@ -111,7 +112,7 @@ public class InterpolationTreeBuilder
                         {
                             if ( isInterpolationPossible( (String) item ) )
                             {
-                                Element indexedItem = new ArrayEntryInterpolatable( currentField, i, (String) item );
+                                Element indexedItem = new ArrayEntryInterpolatable( currentField.field, i, (String) item );
                                 children.add( indexedItem );
                             }
                         }
@@ -120,28 +121,27 @@ public class InterpolationTreeBuilder
                             List<Element> build = buildChildren( item );
                             if ( build != null )
                             {
-                                children.add( new ArrayContainer( currentField, build, i ) );
+                                children.add( new ArrayContainer( currentField.field, build, i ) );
                             }
                         }
                     }
                 }
-                else if ( isQualifiedForInterpolation( object.getClass() ) && isFieldQualifiedForInterpolation(
-                    currentField ) )
+                else
                 {
-                    currentField.setAccessible( true );
-                    Object value = currentField.get( object );
+                    currentField.field.setAccessible( true );
+                    Object value = currentField.field.get( object );
 
-                    if ( String.class == type )
+                    if ( currentField.isString )
                     {
-                        buildStringEntry( children, currentField, (String) value );
+                        buildStringEntry( children, currentField.field, (String) value );
                     }
-                    else if ( List.class.isAssignableFrom( type ) )
+                    else if ( currentField.isList )
                     {
-                        buildFullListItem( object, children, currentField );
+                        buildFullListItem( object, children, currentField.field );
                     }
-                    else if ( Map.class.isAssignableFrom( type ) )
+                    else if ( currentField.isMap )
                     {
-                        if ( "locations".equals( currentField.getName() ) )
+                        if ( "locations".equals( currentField.field.getName() ) )
                         {
                             continue;
                         }
@@ -150,13 +150,13 @@ public class InterpolationTreeBuilder
                         {
                             for ( Object entry : aMap.entrySet() )
                             {
-                                buildMapItem( children, currentField, (Map.Entry) entry );
+                                buildMapItem( children, currentField.field, (Map.Entry) entry );
                             }
                         }
                     }
                     else
                     {
-                        buildObjectEntry( children, currentField, value );
+                        buildObjectEntry( children, currentField.field, value );
                     }
                 }
             }
