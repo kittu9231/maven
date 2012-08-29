@@ -521,6 +521,10 @@ public class InterpolationTreeBuilder
         {
             return field.getName();
         }
+
+        public String thisToString(){
+           return "";
+        }
     }
 
     static abstract class MyContainerImpl
