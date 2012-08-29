@@ -23,7 +23,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -60,8 +59,6 @@ public class InterpolationCache
     {
         public final boolean isArray;
 
-        public final boolean isQualifiedForInterpolation;
-
         public final CacheField[] fields;
 
         @SuppressWarnings( "SimplifiableIfStatement" )
@@ -93,10 +90,9 @@ public class InterpolationCache
 
         CacheItem( Class clazz, CacheItem parent )
         {
-            this.isQualifiedForInterpolation = isQualifiedForInterpolation( clazz );
             this.isArray = clazz.isArray();
             List<CacheField> fields = new ArrayList<CacheField>();
-            if ( isQualifiedForInterpolation )
+            if ( isQualifiedForInterpolation( clazz ) )
             {
                 if ( parent != null )
                 {
@@ -111,24 +107,21 @@ public class InterpolationCache
                         {
                             if ( !Modifier.isFinal( currentField.getModifiers() ) )
                             {
-                                fields.add( new CacheField( currentField, true, false, false, false, false ) );
+                                fields.add( new CacheField( currentField, true, false, false, false ) );
                             }
                         }
                         else if ( List.class.isAssignableFrom( type ) )
                         {
-                            fields.add( new CacheField( currentField, false, true, false, false, false ) );
-                        }
-                        else if ( Collection.class.isAssignableFrom( type ) )
-                        {
-                            fields.add( new CacheField( currentField, false, false, true, false, false ) );
+                            fields.add( new CacheField( currentField, false, true, false, false ) );
                         }
                         else if ( Map.class.isAssignableFrom( type ) )
                         {
-                            fields.add( new CacheField( currentField, false, false, false, true, false ) );
+                            fields.add( new CacheField( currentField, false, false, true, false ) );
                         }
                         else
                         {
-                            fields.add( new CacheField( currentField, false, false, false, false, true ) );
+                            fields.add( new CacheField( currentField, false, false, false, true ) );
+
                         }
                     }
 
@@ -155,19 +148,16 @@ public class InterpolationCache
 
         public final boolean isList;
 
-        public final boolean isColletin;
-
         public final boolean isMap;
 
         public final boolean isObject;
 
-        CacheField( Field field, boolean string, boolean list, boolean isCollection, boolean map, boolean object )
+        CacheField( Field field, boolean string, boolean list, boolean map, boolean object )
         {
             this.field = field;
             this.type = field.getType();
             isString = string;
             isList = list;
-            isColletin = isCollection;
             isMap = map;
             isObject = object;
         }

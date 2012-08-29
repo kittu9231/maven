@@ -44,8 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.w3c.dom.NodeList;
-
 @Component( role = ModelInterpolator.class )
 public class StringSearchModelInterpolator
     extends AbstractStringBasedModelInterpolator
@@ -54,8 +52,8 @@ public class StringSearchModelInterpolator
     private static final Map<Class<?>, InterpolateObjectAction.CacheItem> cachedEntries =
         new ConcurrentHashMap<Class<?>, InterpolateObjectAction.CacheItem>( 80, 0.75f, 2 );
 
-    private static final Map<String, ReverseInterpolationTreeBuilder.Elements> hotCache =
-        new ConcurrentHashMap<String, ReverseInterpolationTreeBuilder.Elements>( 80, 0.75f, 2 );
+    private static final Map<String, InterpolationTreeBuilder.Elements> hotCache =
+        new ConcurrentHashMap<String, InterpolationTreeBuilder.Elements>( 80, 0.75f, 2 );
 
     public static void clearCaches(){
         cachedEntries.clear();
@@ -146,8 +144,8 @@ public class StringSearchModelInterpolator
         {
             try
             {
-                ReverseInterpolationTreeBuilder interpolationTreeBuilder = new ReverseInterpolationTreeBuilder();
-                ReverseInterpolationTreeBuilder.Elements elements;
+                InterpolationTreeBuilder interpolationTreeBuilder = new InterpolationTreeBuilder();
+                InterpolationTreeBuilder.Elements elements;
                 if ( id != null )
                 {
                     elements = hotCache.get( id );
@@ -167,7 +165,7 @@ public class StringSearchModelInterpolator
                 }
                 if ( elements != null )
                 {
-                    elements.interpolate( target, new ReverseInterpolationTreeBuilder.Interpolator()
+                    elements.interpolate( target, new InterpolationTreeBuilder.Interpolator()
                     {
                         public String interpolate( String original )
                         {

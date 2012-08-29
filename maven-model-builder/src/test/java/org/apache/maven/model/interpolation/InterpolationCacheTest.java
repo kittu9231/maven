@@ -31,7 +31,6 @@ public class InterpolationCacheTest
     {
         Model model = new Model();
         InterpolationCache.CacheItem cacheEntry = InterpolationCache.getCacheEntry( model.getClass() );
-        assertTrue( cacheEntry.isQualifiedForInterpolation );
         InterpolationCache.CacheField modules = cacheEntry.findField( "modules" );
         assertFalse( modules.isMap );
         assertFalse( modules.isObject );

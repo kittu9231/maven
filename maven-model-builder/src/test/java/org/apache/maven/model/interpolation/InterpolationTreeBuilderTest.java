@@ -36,7 +36,18 @@ public class InterpolationTreeBuilderTest
         assertEquals("INTP${aPropValue}", propContainer.props.getProperty( "aKey" ));
     }
 
-    public void testFinalListField()
+    public void testFinalListFieldA()
+        throws IllegalAccessException
+    {
+        List<String[]> values = new ArrayList<String[]>();
+        values.add( new String[] { "${key}", "${key2}" } );
+        ObjectWithListField sut = new ObjectWithListField( values );
+        ObjectWithListField interpolate = interpolate( sut );
+        assertNotNull( interpolate);
+    }
+
+
+    public void testFinalListFieldB()
         throws IllegalAccessException
     {
         List<String[]> values = new ArrayList<String[]>();
@@ -47,7 +58,6 @@ public class InterpolationTreeBuilderTest
         assertNotNull( interpolate);
 
     }
-
     public void testSimpleInterpolatio()
         throws IllegalAccessException
     {
