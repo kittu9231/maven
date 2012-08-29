@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 public class InterpolationTreeBuilderTest
     extends TestCase
@@ -27,6 +28,13 @@ public class InterpolationTreeBuilderTest
         System.out.println(elements);
     }
 
+    public void testProperties()
+        throws IllegalAccessException
+    {
+        PropContainer propContainer = interpolate( new PropContainer());
+        assertNotNull(propContainer);
+        assertEquals("INTP${aPropValue}", propContainer.props.getProperty( "aKey" ));
+    }
 
     public void testFinalListField()
         throws IllegalAccessException
@@ -104,6 +112,16 @@ public class InterpolationTreeBuilderTest
     class AnObj {
         String aFoo = "${aFoo}";
     }
+
+    class PropContainer {
+        String aFoo = "${aFoo}";
+        Properties props = new Properties(  ){
+            {
+                put( "aKey", "${aPropValue}" );
+            }
+        };
+    }
+
     @SuppressWarnings( "UnusedDeclaration" )
     class TestC {
         InnerTest innerTest = new InnerTest();

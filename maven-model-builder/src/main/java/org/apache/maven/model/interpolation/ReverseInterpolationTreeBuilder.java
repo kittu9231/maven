@@ -42,7 +42,8 @@ public class ReverseInterpolationTreeBuilder
                 {
                     if ( isInterpolationPossible( (String) item ) )
                     {
-                        DirectArrayEntryInterpolatable indexedItem = new DirectArrayEntryInterpolatable( j, (String) item, parentElement );
+                        DirectArrayEntryInterpolatable indexedItem =
+                            new DirectArrayEntryInterpolatable( j, (String) item, parentElement );
                         leaves.add( indexedItem );
                     }
                 }
@@ -94,7 +95,7 @@ public class ReverseInterpolationTreeBuilder
     private void buildFullListItem( NuElement parent, Object value, Field currentField )
         throws IllegalAccessException
     {
-        @SuppressWarnings( "unchecked" ) List<Object> c = (List<Object>) value;
+        @SuppressWarnings("unchecked") List<Object> c = (List<Object>) value;
         if ( c != null )
         {
             int size = c.size();
@@ -208,8 +209,9 @@ public class ReverseInterpolationTreeBuilder
             return root;
         }
 
-        public String toString(){
-           return null;
+        public String toString()
+        {
+            return null;
         }
 
     }
@@ -238,7 +240,7 @@ public class ReverseInterpolationTreeBuilder
         public String toString()
         {
             String s = parent.toString();
-            return s!= null ? s + "." + currentField.getName() : currentField.getName();
+            return s != null ? s + "." + currentField.getName() : currentField.getName();
         }
     }
 
@@ -248,7 +250,8 @@ public class ReverseInterpolationTreeBuilder
     }
 
     static class MapEntryInterpolatable
-        extends FieldBoundNuElement implements Leaf
+        extends FieldBoundNuElement
+        implements Leaf
     {
         private final Object key;
 
@@ -256,7 +259,7 @@ public class ReverseInterpolationTreeBuilder
 
         MapEntryInterpolatable( NuElement parent, Field currentField, Object key, String originalValue )
         {
-            super( parent, currentField);
+            super( parent, currentField );
             this.key = key;
             this.originalValue = originalValue;
         }
@@ -270,15 +273,24 @@ public class ReverseInterpolationTreeBuilder
         public void setValue( Object root, String value )
             throws IllegalAccessException
         {
-            currentField.set(  parent.getValue( root ), value );
+            @SuppressWarnings( "unchecked" ) Map<Object, String> map =
+                (Map) currentField.get( parent.getValue( root ) );
+
+            try
+            {
+                map.put( key, value );
+            }
+            catch ( java.lang.UnsupportedOperationException ignore )
+            {
+            }
+
         }
 
         @Override
         public Object getValue( Object root )
             throws IllegalAccessException
         {
-            @SuppressWarnings( "unchecked" ) Map<Object, String> map =
-                (Map) currentField.get( parent.getValue( root ) );
+            @SuppressWarnings("unchecked") Map<Object, String> map = (Map) currentField.get( parent.getValue( root ) );
             return map.get( key );
         }
 
@@ -287,19 +299,19 @@ public class ReverseInterpolationTreeBuilder
         public String toString()
         {
             String s = parent.toString();
-            return s!= null ? s + currentField.getName() + "[" + key + "]" : currentField.getName() + "[" + key + "]";
+            return s != null ? s + currentField.getName() + "[" + key + "]" : currentField.getName() + "[" + key + "]";
         }
     }
 
     static class DirectArrayEntryInterpolatable
-        extends NuElement implements Leaf
+        extends NuElement
+        implements Leaf
     {
         private final int pos;
 
         private final String originalValue;
 
         private final NuElement parent;
-
 
 
         public void interpolate( Object target, Interpolator interpolator )
@@ -325,7 +337,7 @@ public class ReverseInterpolationTreeBuilder
         public void setValue( Object root, String value )
             throws IllegalAccessException
         {
-            Array.set(  parent.getValue( root ), pos, value );
+            Array.set( parent.getValue( root ), pos, value );
         }
 
         DirectArrayEntryInterpolatable( int pos, String originalValue, NuElement parent )
@@ -345,7 +357,8 @@ public class ReverseInterpolationTreeBuilder
 
 
     static class ListItemInterpolatable
-        extends FieldBoundNuElement implements Leaf
+        extends FieldBoundNuElement
+        implements Leaf
     {
         private final int pos;
 
@@ -353,7 +366,7 @@ public class ReverseInterpolationTreeBuilder
 
         ListItemInterpolatable( NuElement parent, Field currentField, int pos, String originalValue )
         {
-            super( parent, currentField);
+            super( parent, currentField );
             this.pos = pos;
             this.originalValue = originalValue;
         }
@@ -373,8 +386,14 @@ public class ReverseInterpolationTreeBuilder
         public void setValue( Object root, String value )
             throws IllegalAccessException
         {
-            @SuppressWarnings( "unchecked" ) List<Object> list = (List) getValue( root );
-            list.set( pos, value );
+            @SuppressWarnings("unchecked") List<Object> list = (List) getValue( root );
+            try
+            {
+                list.set( pos, value );
+            }
+            catch ( java.lang.UnsupportedOperationException ignore )
+            {
+            }
         }
 
         @Override
@@ -392,7 +411,7 @@ public class ReverseInterpolationTreeBuilder
 
         StringMemberInterpolatable( NuElement parent, Field currentField, String originalValue )
         {
-            super(parent, currentField);
+            super( parent, currentField );
             this.originalValue = originalValue;
         }
 
@@ -519,7 +538,8 @@ public class ReverseInterpolationTreeBuilder
             {
                 String originalValue = element.getOriginalValue();
                 String s = interpolator.interpolate( originalValue );
-                if (originalValue != null && !originalValue.equals( s )){
+                if ( originalValue != null && !originalValue.equals( s ) )
+                {
                     element.setValue( root, s );
                 }
             }
