@@ -169,7 +169,7 @@ public class DefaultPluginRealmCache
 
         if ( cache.containsKey( key ) )
         {
-            throw new IllegalStateException( "Duplicate plugin realm for plugin " + key );
+            // Ignore this for now...
         }
 
         CacheRecord record = new CacheRecord( pluginRealm, pluginArtifacts );

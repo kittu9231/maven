@@ -295,7 +295,7 @@ public class DefaultMavenPluginManager
         }
     }
 
-    public synchronized void setupPluginRealm( PluginDescriptor pluginDescriptor, MavenSession session,
+    public void setupPluginRealm( PluginDescriptor pluginDescriptor, MavenSession session,
                                                ClassLoader parent, List<String> imports, DependencyFilter filter )
         throws PluginResolutionException, PluginContainerException
     {
@@ -323,7 +323,6 @@ public class DefaultMavenPluginManager
         else
         {
             createPluginRealm( pluginDescriptor, session, parent, foreignImports, filter );
-
             cacheRecord =
                 pluginRealmCache.put( cacheKey, pluginDescriptor.getClassRealm(), pluginDescriptor.getArtifacts() );
         }
@@ -375,7 +374,8 @@ public class DefaultMavenPluginManager
 
         List<org.eclipse.aether.artifact.Artifact> pluginArtifacts = nlg.getArtifacts( true );
 
-        ClassRealm pluginRealm =
+        synchronized ( this ){
+            ClassRealm pluginRealm =
             classRealmManager.createPluginRealm( plugin, parent, null, foreignImports, pluginArtifacts );
 
         pluginDescriptor.setClassRealm( pluginRealm );
@@ -400,6 +400,7 @@ public class DefaultMavenPluginManager
         {
             throw new PluginContainerException( plugin, pluginRealm, "Error in component graph of plugin "
                 + plugin.getId() + ": " + e.getMessage(), e );
+        }
         }
     }
 
