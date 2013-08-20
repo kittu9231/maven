@@ -34,7 +34,9 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.PluginConfigurationException;
 import org.apache.maven.plugin.PluginIncompatibleException;
 import org.apache.maven.plugin.PluginManagerException;
+import org.apache.maven.plugin.PluginResolutionException;
 import org.apache.maven.plugin.descriptor.MojoDescriptor;
+import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
@@ -132,7 +134,7 @@ public class MojoExecutor
         return Collections.emptyList();
     }
 
-    public void execute( MavenSession session, List<MojoExecution> mojoExecutions, ProjectIndex projectIndex )
+    public void execute( final MavenSession session, List<MojoExecution> mojoExecutions, ProjectIndex projectIndex )
         throws LifecycleExecutionException
 
     {
@@ -140,10 +142,47 @@ public class MojoExecutor
 
         PhaseRecorder phaseRecorder = new PhaseRecorder( session.getCurrentProject() );
 
+        final List<PluginDescriptor> pd = new ArrayList<PluginDescriptor>(  );
+        for ( MojoExecution mojoExecution : mojoExecutions )
+        {
+            pd.add(  mojoExecution.getMojoDescriptor().getPluginDescriptor() );
+        }
+        final List<PluginDescriptor> rev = new ArrayList<PluginDescriptor>( pd );
+        Collections.reverse( rev );
+
+//        new Thread( createPreloader( session, pd ) ).start();
+        new Thread( createPreloader( session, pd ) ).start();
+
         for ( MojoExecution mojoExecution : mojoExecutions )
         {
             execute( session, mojoExecution, projectIndex, dependencyContext, phaseRecorder );
         }
+    }
+
+    private Runnable createPreloader( final MavenSession session, final List<PluginDescriptor> descriptors )
+    {
+        return new Runnable(){
+            public void run()
+            {
+                for ( PluginDescriptor pluginDescriptor : descriptors )
+                {
+                    try
+                    {
+
+                        pluginManager.getPluginRealm( session, pluginDescriptor );
+                    } catch ( PluginResolutionException ignore )
+                    {
+                        ignore.printStackTrace();
+                        // this will be dealt with later
+                    }
+                    catch (PluginManagerException ignore){
+                        ignore.printStackTrace();
+                        // this will be dealt with later
+                    }
+
+                }
+            }
+        };
     }
 
     public void execute( MavenSession session, MojoExecution mojoExecution, ProjectIndex projectIndex,

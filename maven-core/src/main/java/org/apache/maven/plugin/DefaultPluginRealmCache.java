@@ -146,7 +146,7 @@ public class DefaultPluginRealmCache
 
     }
 
-    protected final Map<Key, CacheRecord> cache = new ConcurrentHashMap<Key, CacheRecord>();
+    protected final ConcurrentHashMap<Key, CacheRecord> cache = new ConcurrentHashMap<Key, CacheRecord>();
 
     public Key createKey( Plugin plugin, ClassLoader parentRealm, Map<String, ClassLoader> foreignImports,
                           DependencyFilter dependencyFilter, List<RemoteRepository> repositories,
@@ -169,12 +169,12 @@ public class DefaultPluginRealmCache
 
         if ( cache.containsKey( key ) )
         {
-            throw new IllegalStateException( "Duplicate plugin realm for plugin " + key );
+            return cache.get( key);
         }
 
         CacheRecord record = new CacheRecord( pluginRealm, pluginArtifacts );
 
-        cache.put( key, record );
+        cache.putIfAbsent( key, record );
 
         return record;
     }

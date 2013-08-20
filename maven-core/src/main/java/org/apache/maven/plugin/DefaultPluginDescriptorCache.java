@@ -20,9 +20,9 @@ package org.apache.maven.plugin;
  */
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.maven.artifact.ArtifactUtils;
 import org.apache.maven.model.Plugin;
@@ -50,7 +50,7 @@ public class DefaultPluginDescriptorCache
     implements PluginDescriptorCache
 {
 
-    private Map<Key, PluginDescriptor> descriptors = new HashMap<Key, PluginDescriptor>( 128 );
+    private Map<Key, PluginDescriptor> descriptors = new ConcurrentHashMap<Key, PluginDescriptor>( 128 );
 
     public void flush()
     {

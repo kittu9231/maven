@@ -295,7 +295,7 @@ public class DefaultMavenPluginManager
         }
     }
 
-    public synchronized void setupPluginRealm( PluginDescriptor pluginDescriptor, MavenSession session,
+    public void setupPluginRealm( PluginDescriptor pluginDescriptor, MavenSession session,
                                                ClassLoader parent, List<String> imports, DependencyFilter filter )
         throws PluginResolutionException, PluginContainerException
     {
