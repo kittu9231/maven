@@ -40,10 +40,14 @@ import org.apache.maven.model.building.UrlModelSource;
 import org.apache.maven.plugin.LegacySupport;
 import org.apache.maven.profiles.ProfileManager;
 import org.apache.maven.properties.internal.EnvironmentUtils;
+import org.apache.maven.properties.internal.SystemProperties;
 import org.apache.maven.repository.RepositorySystem;
 import org.apache.maven.wagon.events.TransferListener;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
+
+import static org.apache.maven.properties.internal.EnvironmentUtils.getEnvVars;
+import static org.apache.maven.properties.internal.SystemProperties.addSystemProperties;
 
 /**
  */
@@ -128,10 +132,8 @@ public class DefaultMavenProjectBuilder
         }
         else
         {
-            Properties props = new Properties();
-            EnvironmentUtils.addEnvVars( props );
-            props.putAll( System.getProperties() );
-            request.setSystemProperties( props );
+            Properties merged = addSystemProperties( getEnvVars() );
+            request.setSystemProperties( merged );
         }
 
         return request;

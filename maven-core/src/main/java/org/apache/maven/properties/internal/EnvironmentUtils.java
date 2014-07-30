@@ -46,7 +46,7 @@ public class EnvironmentUtils
      * 
      * @param props The properties to add the environment variables to, may be {@code null}.
      */
-    public static void addEnvVars( Properties props )
+    public static Properties addEnvVars( Properties props )
     {
         if ( props != null )
         {
@@ -65,6 +65,11 @@ public class EnvironmentUtils
 
             props.putAll( envVars );
         }
+        return props;
     }
 
+    public static Properties getEnvVars()
+    {
+        return addEnvVars( new Properties(  ) );
+    }
 }

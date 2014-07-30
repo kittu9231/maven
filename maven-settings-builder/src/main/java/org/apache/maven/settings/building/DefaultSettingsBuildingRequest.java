@@ -19,6 +19,8 @@ package org.apache.maven.settings.building;
  * under the License.
  */
 
+import com.sun.javafx.runtime.SystemProperties;
+
 import java.io.File;
 import java.util.Properties;
 
@@ -101,15 +103,16 @@ public class DefaultSettingsBuildingRequest
         return systemProperties;
     }
 
+    @SuppressWarnings( "SynchronizationOnLocalVariableOrMethodParameter" )
     public DefaultSettingsBuildingRequest setSystemProperties( Properties systemProperties )
     {
         if ( systemProperties != null )
         {
             this.systemProperties = new Properties();
             // MNG-5670 guard against ConcurrentModificationException
-            for ( String key : System.getProperties().stringPropertyNames() )
+            synchronized ( systemProperties )
             {
-                this.systemProperties.put( key, System.getProperty( key ) );
+                this.systemProperties.putAll( systemProperties );
             }
         }
         else

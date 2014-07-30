@@ -31,12 +31,23 @@ public class SystemProperties
      * 
      * @see http://jira.codehaus.org/browse/MNG-5670
      */
-    public static void addSystemProperties( Properties props )
+	public static Properties addSystemProperties( Properties target )
     {
-        for ( String key : System.getProperties().stringPropertyNames() )
+		return threadSafeCopyProperties( target, System.getProperties() );
+    }
+
+    /**
+     * Copes the source collection safely, guarding against concurrent modification
+     * on both source and target
+     */
+    @SuppressWarnings( "SynchronizationOnLocalVariableOrMethodParameter" )
+    public static Properties threadSafeCopyProperties( Properties target, Properties source )
+    {
+        synchronized ( source )
         {
-            props.put( key, System.getProperty( key ) );
+            target.putAll( source );
         }
+        return target;
     }
 
     /**
@@ -44,8 +55,6 @@ public class SystemProperties
      */
     public static Properties getSystemProperties()
     {
-        Properties systemProperties = new Properties();
-        addSystemProperties( systemProperties );
-        return systemProperties;
+        return addSystemProperties( new Properties() );
     }
 }

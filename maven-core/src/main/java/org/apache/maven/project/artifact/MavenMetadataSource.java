@@ -80,6 +80,9 @@ import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.transfer.ArtifactNotFoundException;
 
+import static org.apache.maven.properties.internal.EnvironmentUtils.getEnvVars;
+import static org.apache.maven.properties.internal.SystemProperties.addSystemProperties;
+
 /**
  * @author Jason van Zyl
  */
@@ -749,13 +752,7 @@ public class MavenMetadataSource
 
     private Properties getSystemProperties()
     {
-        Properties props = new Properties();
-
-        EnvironmentUtils.addEnvVars( props );
-
-        SystemProperties.addSystemProperties( props );
-
-        return props;
+        return addSystemProperties( getEnvVars());
     }
 
     private static final class ProjectRelocation
