@@ -29,20 +29,22 @@ public class DefaultProjectDependencyGraphTest
 
     private final MavenProject A = createA();
 
+    private final MavenProject depender1 = createC( Arrays.asList( toDependency( A ) ), "depender1" );
 
-    private final MavenProject depender1 = createC(Arrays.asList( toDependency( A)), "depender1" );
+    private final MavenProject depender2 = createC( Arrays.asList( toDependency( A ) ), "depender2" );
 
-    private final MavenProject depender2 = createC(Arrays.asList( toDependency( A )), "depender2" );
+    private final MavenProject depender3 = createC( Arrays.asList( toDependency( A ) ), "depender3" );
 
-    private final MavenProject depender3 = createC(Arrays.asList( toDependency( A )), "depender3" );
+    private final MavenProject depender4 =
+        createC( Arrays.asList( toDependency( A ), toDependency( depender3 ) ), "depender4" );
 
     public void testGetSortedProjects()
         throws Exception
     {
         DefaultProjectDependencyGraph dd = new DefaultProjectDependencyGraph( Arrays.asList( depender1, A ) );
         final List<MavenProject> sortedProjects = dd.getSortedProjects();
-        assertEquals( A, sortedProjects.get(0));
-        assertEquals( depender1, sortedProjects.get(1));
+        assertEquals( A, sortedProjects.get( 0 ) );
+        assertEquals( depender1, sortedProjects.get( 1 ) );
     }
 
     public void testVerifyExpectedParentStructure()
@@ -51,19 +53,32 @@ public class DefaultProjectDependencyGraphTest
         // This test verifies the baseline structure used in susequent tests. If this fails, the rest will fail.
         DefaultProjectDependencyGraph dd = aParentWith3Children();
         final List<MavenProject> sortedProjects = dd.getSortedProjects();
-        assertEquals( A, sortedProjects.get(0));
-        assertEquals( depender1, sortedProjects.get(1));
-        assertEquals( depender2, sortedProjects.get(2));
-        assertEquals( depender3, sortedProjects.get(3));
+        assertEquals( A, sortedProjects.get( 0 ) );
+        assertEquals( depender1, sortedProjects.get( 1 ) );
+        assertEquals( depender2, sortedProjects.get( 2 ) );
+        assertEquals( depender3, sortedProjects.get( 3 ) );
     }
 
     public void testVerifyThatDownsteamProjectsComeInSortedOrder()
         throws CycleDetectedException, DuplicateProjectException
     {
         final List<MavenProject> downstreamProjects = aParentWith3Children().getDownstreamProjects( A, true );
-        assertEquals( depender1, downstreamProjects.get(0));
-        assertEquals( depender2, downstreamProjects.get(1));
-        assertEquals( depender3, downstreamProjects.get(2));
+        assertEquals( depender1, downstreamProjects.get( 0 ) );
+        assertEquals( depender2, downstreamProjects.get( 1 ) );
+        assertEquals( depender3, downstreamProjects.get( 2 ) );
+    }
+
+    public void testTransitivesInOrder()
+        throws CycleDetectedException, DuplicateProjectException
+    {
+        final DefaultProjectDependencyGraph defaultProjectDependencyGraph =
+            new DefaultProjectDependencyGraph( Arrays.asList( depender1, depender4, depender2, depender3, A ) );
+
+        final List<MavenProject> downstreamProjects = defaultProjectDependencyGraph.getDownstreamProjects( A, true );
+        assertEquals( depender1, downstreamProjects.get( 0 ) );
+        assertEquals( depender3, downstreamProjects.get( 1 ) );
+        assertEquals( depender4, downstreamProjects.get( 2 ) );
+        assertEquals( depender2, downstreamProjects.get( 3 ) );
     }
 
 
@@ -72,7 +87,7 @@ public class DefaultProjectDependencyGraphTest
     {
         DefaultProjectDependencyGraph dd = aParentWith3Children();
         final List<MavenProject> downstreamProjects = dd.getUpstreamProjects( depender1, true );
-        assertEquals( A, downstreamProjects.get(0));
+        assertEquals( A, downstreamProjects.get( 0 ) );
     }
 
     private DefaultProjectDependencyGraph aParentWith3Children()
@@ -90,7 +105,8 @@ public class DefaultProjectDependencyGraphTest
         return A;
     }
 
-    Dependency toDependency(MavenProject mavenProject){
+    Dependency toDependency( MavenProject mavenProject )
+    {
         final Dependency dependency = new Dependency();
         dependency.setArtifactId( mavenProject.getArtifactId() );
         dependency.setGroupId( mavenProject.getGroupId() );

@@ -119,6 +119,7 @@ class DefaultProjectDependencyGraph
                result.add( mavenProject);
            }
         }
+
         return result;
     }
 
