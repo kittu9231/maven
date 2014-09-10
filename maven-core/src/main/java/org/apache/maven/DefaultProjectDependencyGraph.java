@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.maven.execution.ProjectDependencyGraph;
 import org.apache.maven.project.DuplicateProjectException;
@@ -65,14 +66,14 @@ class DefaultProjectDependencyGraph
             throw new IllegalArgumentException( "project missing" );
         }
 
-        Collection<String> projectIds = new HashSet<String>();
+        Set<String> projectIds = new HashSet<String>();
 
         getDownstreamProjects( ProjectSorter.getId( project ), projectIds, transitive );
 
-        return getProjects( projectIds );
+        return getSortedProjects( projectIds );
     }
 
-    private void getDownstreamProjects( String projectId, Collection<String> projectIds, boolean transitive )
+    private void getDownstreamProjects( String projectId, Set<String> projectIds, boolean transitive )
     {
         for ( String id : sorter.getDependents( projectId ) )
         {
@@ -90,11 +91,11 @@ class DefaultProjectDependencyGraph
             throw new IllegalArgumentException( "project missing" );
         }
 
-        Collection<String> projectIds = new HashSet<String>();
+        Set<String> projectIds = new HashSet<String>();
 
         getUpstreamProjects( ProjectSorter.getId( project ), projectIds, transitive );
 
-        return getProjects( projectIds );
+        return getSortedProjects( projectIds );
     }
 
     private void getUpstreamProjects( String projectId, Collection<String> projectIds, boolean transitive )
@@ -108,21 +109,17 @@ class DefaultProjectDependencyGraph
         }
     }
 
-    private List<MavenProject> getProjects( Collection<String> projectIds )
+    private List<MavenProject> getSortedProjects( Set<String> projectIds )
     {
-        List<MavenProject> projects = new ArrayList<MavenProject>( projectIds.size() );
+        List<MavenProject> result = new ArrayList<MavenProject>( projectIds.size() );
 
-        for ( String projectId : projectIds )
+        for ( MavenProject mavenProject : sorter.getSortedProjects() )
         {
-            MavenProject project = sorter.getProjectMap().get( projectId );
-
-            if ( project != null )
-            {
-                projects.add( project );
-            }
+           if (projectIds.contains( ProjectSorter.getId( mavenProject))){
+               result.add( mavenProject);
+           }
         }
-
-        return projects;
+        return result;
     }
 
     @Override
