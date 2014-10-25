@@ -5,6 +5,8 @@
 
 package org.apache.maven.model.immutable;
 
+import org.codehaus.plexus.util.xml.Xpp3Dom;
+
 import java.util.List;
 import java.util.Map;
 
@@ -31,8 +33,8 @@ public class Plugin
     private Object goals;
 
     public Plugin( String inherited, Object configuration, Map<Object, InputLocation> locations, String groupId,
-                   String artifactId, String version, String extensions, List<PluginExecution> executions,
-                   List<Dependency> dependencies, Object goals )
+                    String artifactId, String version, String extensions, List<PluginExecution> executions,
+                    List<Dependency> dependencies, Xpp3Dom goals )
     {
         super( inherited, configuration, locations );
         this.groupId = groupId;
@@ -42,5 +44,69 @@ public class Plugin
         this.executions = executions;
         this.dependencies = dependencies;
         this.goals = goals;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        if ( !super.equals( o ) )
+        {
+            return false;
+        }
+
+        Plugin plugin = (Plugin) o;
+
+        if ( artifactId != null ? !artifactId.equals( plugin.artifactId ) : plugin.artifactId != null )
+        {
+            return false;
+        }
+        if ( dependencies != null ? !dependencies.equals( plugin.dependencies ) : plugin.dependencies != null )
+        {
+            return false;
+        }
+        if ( executions != null ? !executions.equals( plugin.executions ) : plugin.executions != null )
+        {
+            return false;
+        }
+        if ( extensions != null ? !extensions.equals( plugin.extensions ) : plugin.extensions != null )
+        {
+            return false;
+        }
+        if ( goals != null ? !goals.equals( plugin.goals ) : plugin.goals != null )
+        {
+            return false;
+        }
+        if ( groupId != null ? !groupId.equals( plugin.groupId ) : plugin.groupId != null )
+        {
+            return false;
+        }
+        if ( version != null ? !version.equals( plugin.version ) : plugin.version != null )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = super.hashCode();
+        result = 31 * result + ( groupId != null ? groupId.hashCode() : 0 );
+        result = 31 * result + ( artifactId != null ? artifactId.hashCode() : 0 );
+        result = 31 * result + ( version != null ? version.hashCode() : 0 );
+        result = 31 * result + ( extensions != null ? extensions.hashCode() : 0 );
+        result = 31 * result + ( executions != null ? executions.hashCode() : 0 );
+        result = 31 * result + ( dependencies != null ? dependencies.hashCode() : 0 );
+        result = 31 * result + ( goals != null ? goals.hashCode() : 0 );
+        return result;
     }
 }

@@ -22,11 +22,11 @@ public class Developer
 
     public final String id;
 
-    public Developer( String name, String email, String url, String organization, String organizationUrl,
-                      List<String> roles, String timezone, Properties properties, Map<Object, InputLocation> locations,
-                      String id )
+    public Developer( int hashCode, String name, String email, String url, String organization, String organizationUrl,
+                       List<String> roles, String timezone, Properties properties, Map<Object, InputLocation> locations,
+                       String id )
     {
-        super( name, email, url, organization, organizationUrl, roles, timezone, properties, locations );
+        super( hashCode, name, email, url, organization, organizationUrl, roles, timezone, properties, locations );
         this.id = id;
     }
 
@@ -63,4 +63,18 @@ public class Developer
         result = 31 * result + ( id != null ? id.hashCode() : 0 );
         return result;
     }
+
+
+    public static int hashCode( String id, String name, String email, String url, String organization, String organizationUrl,
+                                List<String> roles, String timezone, Properties properties )
+    {
+
+        int result = 0;
+        result = 31 * result + ( id != null ? id.hashCode() : 0 );
+        int hc =
+            Contributor.hashCode( name, email, url, organization, organizationUrl, roles, timezone, properties );
+        result = 31 * result +hc ;
+        return result;
+    }
+
 }

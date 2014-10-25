@@ -2,6 +2,7 @@ package org.apache.maven.model.immutable.io.xpp3;
 
 
 import junit.framework.TestCase;
+import org.apache.maven.model.immutable.ImmutableModelBuilder;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.codehaus.plexus.util.DirectoryScanner;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
@@ -12,28 +13,28 @@ import java.io.FileReader;
 public class ImmutableModelXpp3ReaderTest extends TestCase
 {
 
-    public void testOldstyle()
+    public void testImmutable()
         throws Exception
     {
-        doItOldStyle();
+        immutable();
     }
-    public void testnewstyle()
+    public void testMutabke()
         throws Exception
     {
-        readNewStyle();
+        mutable();
     }
 
-    public void testOldstyle2()
+    public void testImmutable2()
         throws Exception
     {
-        doItOldStyle();
+        immutable();
     }
-    public void testnewstyle2()
+    public void testMutable2()
         throws Exception
     {
-        readNewStyle();
+        mutable();
     }
-    public void doItOldStyle()
+    public void immutable()
         throws Exception
     {
 
@@ -57,7 +58,7 @@ public class ImmutableModelXpp3ReaderTest extends TestCase
 
     }
 
-    public void readNewStyle()
+    public void mutable()
         throws Exception
     {
 

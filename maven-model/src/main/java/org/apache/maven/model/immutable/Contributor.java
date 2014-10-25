@@ -12,6 +12,8 @@ import java.util.Properties;
 
 public class Contributor
 {
+    private final int hashCode;
+
     public final String name;
     public final String email;
     public final String url;
@@ -22,9 +24,10 @@ public class Contributor
     public final Properties properties;
     private final Map<Object, InputLocation> locations;
 
-    Contributor( String name, String email, String url, String organization, String organizationUrl, List<String> roles,
+    public Contributor( int hashCode, String name, String email, String url, String organization, String organizationUrl, List<String> roles,
                  String timezone, Properties properties, Map<Object, InputLocation> locations )
     {
+        this.hashCode = hashCode;
         this.name = name;
         this.email = email;
         this.url = url;
@@ -36,12 +39,18 @@ public class Contributor
         this.locations = locations;
     }
 
-    public static Contributor createContributor( String name, String email, String url, String organization,
-                                                 String organizationUrl, List<String> roles, String timezone,
-                                                 Properties properties, Map<Object, InputLocation> locations )
+    public static int hashCode( String name1, String email1, String url1, String organization1, String organizationUrl1,
+                                List<String> roles1, String timezone1, Properties properties1 )
     {
-        return new Contributor( name, email, url, organization, organizationUrl, roles, timezone, properties,
-                                locations );
+        int result = name1 != null ? name1.hashCode() : 0;
+        result = 31 * result + ( email1 != null ? email1.hashCode() : 0 );
+        result = 31 * result + ( url1 != null ? url1.hashCode() : 0 );
+        result = 31 * result + ( organization1 != null ? organization1.hashCode() : 0 );
+        result = 31 * result + ( organizationUrl1 != null ? organizationUrl1.hashCode() : 0 );
+        result = 31 * result + ( roles1 != null ? roles1.hashCode() : 0 );
+        result = 31 * result + ( timezone1 != null ? timezone1.hashCode() : 0 );
+        result = 31 * result + ( properties1 != null ? properties1.hashCode() : 0 );
+        return result;
     }
 
     /**
@@ -61,16 +70,12 @@ public class Contributor
     @Override
     public boolean equals( Object o )
     {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
+        return equals( (Contributor) o, email, name, organization, organizationUrl, properties, roles, timezone, url );
+    }
 
-        Contributor that = (Contributor) o;
+    public static boolean equals(  Contributor that, String email, String name, String organization, String organizationUrl,
+                            Properties properties, List<String> roles, String timezone, String url)
+    {
 
         if ( email != null ? !email.equals( that.email ) : that.email != null )
         {
@@ -108,17 +113,12 @@ public class Contributor
         return true;
     }
 
+
     @Override
     public int hashCode()
     {
-        int result = name != null ? name.hashCode() : 0;
-        result = 31 * result + ( email != null ? email.hashCode() : 0 );
-        result = 31 * result + ( url != null ? url.hashCode() : 0 );
-        result = 31 * result + ( organization != null ? organization.hashCode() : 0 );
-        result = 31 * result + ( organizationUrl != null ? organizationUrl.hashCode() : 0 );
-        result = 31 * result + ( roles != null ? roles.hashCode() : 0 );
-        result = 31 * result + ( timezone != null ? timezone.hashCode() : 0 );
-        result = 31 * result + ( properties != null ? properties.hashCode() : 0 );
-        return result;
+        return hashCode;
     }
+
+
 }

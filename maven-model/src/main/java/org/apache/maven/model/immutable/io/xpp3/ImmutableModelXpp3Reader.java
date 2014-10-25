@@ -36,6 +36,7 @@ import org.apache.maven.model.immutable.DistributionManagement;
 import org.apache.maven.model.immutable.Exclusion;
 import org.apache.maven.model.immutable.Extension;
 import org.apache.maven.model.immutable.FileSet;
+import org.apache.maven.model.immutable.ImmutableModelBuilder;
 import org.apache.maven.model.immutable.IssueManagement;
 import org.apache.maven.model.immutable.License;
 import org.apache.maven.model.immutable.MailingList;
@@ -63,6 +64,7 @@ import org.apache.maven.model.immutable.Resource;
 import org.apache.maven.model.immutable.Scm;
 import org.apache.maven.model.immutable.Site;
 import org.codehaus.plexus.util.ReaderFactory;
+import org.codehaus.plexus.util.StringUtils;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.codehaus.plexus.util.xml.Xpp3DomBuilder;
 import org.codehaus.plexus.util.xml.pull.EntityReplacementMap;
@@ -526,6 +528,21 @@ public class ImmutableModelXpp3Reader
             s = s.trim();
         }
         return s;
+    } //-- String getTrimmedValue( String )
+
+    /**
+     * Method getTrimmedValue.
+     *
+     * @param s
+     * @return String
+     */
+    private String getTrimmedToNullValue( String s )
+    {
+        if ( s != null )
+        {
+            s = s.trim();
+        }
+        return StringUtils.isEmpty( s ) ? null : s;
     } //-- String getTrimmedValue( String )
 
     /**
@@ -1183,7 +1200,7 @@ public class ImmutableModelXpp3Reader
             }
             else if ( checkFieldWithDuplicate( parser, "email", null, parsed ) )
             {
-                email = getTrimmedValue( parser.nextText() );
+                email = getTrimmedToNullValue( parser.nextText() );
             }
             else if ( checkFieldWithDuplicate( parser, "url", null, parsed ) )
             {
@@ -1191,7 +1208,7 @@ public class ImmutableModelXpp3Reader
             }
             else if ( checkFieldWithDuplicate( parser, "organization", "organisation", parsed ) )
             {
-                organizaton = getTrimmedValue( parser.nextText() );
+                organizaton = getTrimmedToNullValue( parser.nextText() );
             }
             else if ( checkFieldWithDuplicate( parser, "organizationUrl", "organisationUrl", parsed ) )
             {
@@ -1220,7 +1237,7 @@ public class ImmutableModelXpp3Reader
                 checkUnknownElement( parser, strict );
             }
         }
-        return Contributor.createContributor( name, email, url, organizaton, organizationUrl, roles, timezone,
+        return builder.createContributor( name, email, url, organizaton, organizationUrl, roles, timezone,
                                               properties, null );
     }
 
@@ -1500,7 +1517,8 @@ public class ImmutableModelXpp3Reader
                 checkUnknownElement( parser, strict );
             }
         }
-        return new Developer( name, email,url, organization, organizationUrl, roles, timezone, properties, null, id );
+        return builder.createDeveloper( name, email, url, organization, organizationUrl, roles, timezone, properties,
+                                          null, id );
     }
 
     /**
@@ -2396,34 +2414,38 @@ public class ImmutableModelXpp3Reader
         throws IOException, XmlPullParserException
     {
         String tagName = parser.getName();
-        Parent parent = new Parent();
         validateAttributes( parser, strict, tagName );
         java.util.Set parsed = new java.util.HashSet();
+        String groupId = null;
+        String artifactId = null;
+        String version = null;
+        String relativePath = null;
+
         while ( ( strict ? parser.nextTag() : nextTag( parser ) ) == XmlPullParser.START_TAG )
         {
             if ( checkFieldWithDuplicate( parser, "groupId", null, parsed ) )
             {
-                parent.setGroupId( getTrimmedValue( parser.nextText() ) );
+                groupId = getTrimmedValue( parser.nextText() );
             }
             else if ( checkFieldWithDuplicate( parser, "artifactId", null, parsed ) )
             {
-                parent.setArtifactId( getTrimmedValue( parser.nextText() ) );
+                artifactId = getTrimmedValue( parser.nextText() );
             }
             else if ( checkFieldWithDuplicate( parser, "version", null, parsed ) )
             {
-                parent.setVersion( getTrimmedValue( parser.nextText() ) );
+                version = getTrimmedValue( parser.nextText() );
             }
             else if ( checkFieldWithDuplicate( parser, "relativePath", null, parsed ) )
             {
-                parent.setRelativePath( getTrimmedValue( parser.nextText() ) );
+                relativePath = getTrimmedValue( parser.nextText() );
             }
             else
             {
                 checkUnknownElement( parser, strict );
             }
         }
-        return parent;
-    } //-- Parent parseParent( XmlPullParser, boolean )
+        return new Parent( groupId, artifactId, version, relativePath, null );
+    }
 
     /**
      * Method parsePatternSet.
@@ -2468,7 +2490,7 @@ public class ImmutableModelXpp3Reader
                 checkUnknownElement( parser, strict );
             }
         }
-        return new PatternSet( includes, excludes, null );
+        return builder.createPatternSet( includes, excludes, null );
     }
 
     /**
@@ -2560,7 +2582,8 @@ public class ImmutableModelXpp3Reader
                 checkUnknownElement( parser, strict );
             }
         }
-        return new Plugin( inherited, configuration, null, groupId, artifactId, version, extensions, executions, dependencies, goals );
+        return builder.createPlugin( inherited, configuration, null, groupId, artifactId, version, extensions,
+                                    executions, dependencies, goals );
     }
 
     /**
