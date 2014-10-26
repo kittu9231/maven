@@ -1,15 +1,4 @@
-// CHECKSTYLE_OFF: RegexpHeader|LineLength
-/**
- * XML reader and writer classes for Maven POM, generated from <code>maven.mdo</code> model.
- * These classes use
- * <a href="http://plexus.codehaus.org/plexus-utils/apidocs/org/codehaus/plexus/util/xml/pull/package-summary.html">plexus-utils'
- * XML Pull Parser API</a> for their internal XML handling and
- * <a href="http://plexus.codehaus.org/plexus-utils/apidocs/org/codehaus/plexus/util/xml/Xpp3DomBuilder.html">Xpp3DomBuilder</a> + 
- * <a href="http://plexus.codehaus.org/plexus-utils/apidocs/org/codehaus/plexus/util/xml/Xpp3Dom.html">Xpp3Dom</a> for
- * DOM content representation (see <code>&lt;configuration&gt;</code> elements).
- */
-package org.apache.maven.model.io.xpp3;
-
+package org.apache.maven.model.immutable;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -28,3 +17,22 @@ package org.apache.maven.model.io.xpp3;
  * specific language governing permissions and limitations
  * under the License.
  */
+class FixedHashCode
+{
+    private final int hashCode;
+
+    protected FixedHashCode( int hashCode )
+    {
+        this.hashCode = hashCode;
+    }
+
+    protected String internNullable(String string){
+        return string != null ? string.intern() : null;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return hashCode;
+    }
+}
