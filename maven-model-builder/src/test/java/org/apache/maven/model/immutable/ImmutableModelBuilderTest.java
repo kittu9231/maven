@@ -13,7 +13,7 @@ public class ImmutableModelBuilderTest
     {
         InputStream resourceAsStream = this.getClass().getResourceAsStream( "/poms/inheritance/simpletest.xml" );
         ImmutableModelBuilder imb = new ImmutableModelBuilder();
-        imb.buildModel( resourceAsStream );
+        ModelElement modelElement = imb.buildModel( resourceAsStream );
 
         resourceAsStream.close();
     }

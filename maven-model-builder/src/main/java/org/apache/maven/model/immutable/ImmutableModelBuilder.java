@@ -1,5 +1,7 @@
 package org.apache.maven.model.immutable;
 
+import org.apache.maven.model.immutable.model.Builder;
+import org.apache.maven.model.immutable.model.RootBuilder;
 import org.codehaus.plexus.util.StringUtils;
 import org.codehaus.stax2.XMLInputFactory2;
 import org.codehaus.stax2.XMLStreamReader2;
@@ -16,15 +18,18 @@ import java.util.List;
 public class ImmutableModelBuilder
 {
 
-    public Node buildModel( InputStream source )
+    public ModelElement buildModel( InputStream source )
         throws XMLStreamException
     {
         XMLInputFactory2 xmlInputFactory = (XMLInputFactory2) XMLInputFactory.newInstance();
         XMLStreamReader2 streamReader = (XMLStreamReader2) xmlInputFactory.createXMLStreamReader( source );
-        List<List<Node>> kids = new ArrayList<>( 10 );
+        List<List<ModelElement>> kids = new ArrayList<>( 10 );
+        Builder[] builders = new Builder[10];
+        builders[0] = new RootBuilder();
+        String[] textNodes = new String[10];
         for ( int i = 0; i < 10; i++ )
         {
-            kids.add( new ArrayList<Node>() );
+            kids.add( new ArrayList<ModelElement>() );
         }
 
         int indent = 0;
@@ -35,7 +40,8 @@ public class ImmutableModelBuilder
             {
                 case XMLStreamReader2.START_ELEMENT:
                     writeOutIndent( indent );
-                    System.out.print( "<" + streamReader.getLocalName() );
+                    String localName1 = streamReader.getLocalName();
+                    System.out.print( "<" + localName1 );
                     for ( int x = 0; x < streamReader.getAttributeCount(); x++ )
                     {
                         System.out.print( streamReader.getAttributeName( x ) );
@@ -45,11 +51,12 @@ public class ImmutableModelBuilder
                     }
                     System.out.println( ">" );
                     indent++;
+                    builders[indent] = builders[indent - 1].getBuilderFor( localName1 );
                     break;
                 case XMLStreamReader2.END_ELEMENT:
                     String localName = streamReader.getLocalName();
-                    List<Node> nodes = kids.get( indent );
-                    Node result = new Node( localName, nodes.toArray( new Node[nodes.size()] ) );
+                    List<ModelElement> nodes = kids.get( indent );
+                    ModelElement result = builders[indent].from( streamReader, nodes, textNodes[indent] );
                     kids.get( indent ).clear();
                     indent--;
                     kids.get( indent ).add( result );
@@ -64,6 +71,7 @@ public class ImmutableModelBuilder
                 case XMLStreamReader2.CHARACTERS:
                     writeOutIndent( indent );
                     String text = streamReader.getText();
+                    textNodes[indent] = text;
                     if ( !StringUtils.isEmpty( text ) )
                     {
                         System.out.println( text );
