@@ -7,7 +7,7 @@ import org.codehaus.stax2.XMLStreamReader2;
  * Created by kristian on 20.09.15.
  */
 public class PluginsBuilder
-    implements Builder<Plugin>
+    implements Builder<Plugins>
 {
     private final PluginBuilder pluginBuilder = new PluginBuilder();
 
@@ -22,8 +22,8 @@ public class PluginsBuilder
     }
 
     @Override
-    public Plugin from( XMLStreamReader2 node, Iterable<ModelElement> kids, String nodeText )
+    public Plugins from( XMLStreamReader2 node, Iterable<ModelElement> kids, String nodeText )
     {
-        return new Plugin( kids );
+        return new Plugins( kids );
     }
 }

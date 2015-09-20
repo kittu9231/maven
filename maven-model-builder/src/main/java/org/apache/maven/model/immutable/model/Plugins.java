@@ -8,10 +8,10 @@ import org.apache.maven.model.immutable.ModelElement;
 public class Plugins
     extends ModelElement
 {
-    private final Plugin[] plugins;
+    private final Iterable<ModelElement> plugins;
 
 
-    public Plugins( Plugin[] plugins )
+    public Plugins( Iterable<ModelElement> plugins )
     {
         this.plugins = plugins;
     }

@@ -7,7 +7,7 @@ import org.codehaus.stax2.XMLStreamReader2;
  * Created by kristian on 20.09.15.
  */
 public class ProjectBuilder
-    implements Builder<Projects>
+    implements Builder<Project>
 {
     private final BuildBuilder build = new BuildBuilder();
 
@@ -22,8 +22,8 @@ public class ProjectBuilder
     }
 
     @Override
-    public Projects from( XMLStreamReader2 node, Iterable<ModelElement> kids, String nodeText )
+    public Project from( XMLStreamReader2 node, Iterable<ModelElement> kids, String nodeText )
     {
-        return new Projects( kids );
+        return new Project( kids );
     }
 }
